@@ -1,0 +1,45 @@
+name: TanIA - Análisis Diario El Peruano
+
+on:
+  schedule:
+    # Todos los días a las 6:00 AM hora Perú (11:00 UTC)
+    - cron: "0 11 * * *"
+
+  # Permite ejecución manual desde GitHub
+  workflow_dispatch:
+
+jobs:
+  tania-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar pipeline TanIA
+        env:
+          # Google OAuth (Drive + Gmail)
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+
+          # Drive
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+
+          # Gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          
+          # Email test
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+
+        run: |
+          npx ts-node src/worker.ts

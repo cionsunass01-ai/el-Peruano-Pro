@@ -1,0 +1,11 @@
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+selenium
+PyPDF2
+requests
+python-dotenv
+beautifulsoup4
+lxml
+tzdata

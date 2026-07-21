@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  oauth:
+    build:
+      context: ./tanIA-oauth
+    ports:
+      - mode: ingress
+        target: 3000
+        published: "${OAUTH_HOST_PORT:-3001}"
+        protocol: tcp
+        host_ip: 127.0.0.1
+    volumes:
+      - ./secrets:/app/output
+    environment:
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - GOOGLE_REDIRECT_URI
+      - PORT
+    profiles: ["oauth"]
+
+  scraper:
+    build:
+      context: ./elperuano-scraper
+    volumes:
+      - ./downloads:/app/downloads
+    environment:
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - GOOGLE_REFRESH_TOKEN
+      - GOOGLE_DRIVE_FOLDER_ID
+      - TZ=America/Lima
+      - TARGET_DATE
+      - FORCE_REPROCESS
+    profiles: ["scraper"]
+
+  backend:
+    build:
+      context: ./tanIA-backend
+    environment:
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - GOOGLE_REFRESH_TOKEN
+      - GOOGLE_DRIVE_FOLDER_ID
+      - GEMINI_API_KEY
+      - GEMINI_MODEL
+      - EMAIL_RECIPIENTS
+      - GOOGLE_REDIRECT_URI
+    profiles: ["backend"]

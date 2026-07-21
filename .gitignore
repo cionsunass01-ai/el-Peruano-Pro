@@ -1,0 +1,12 @@
+# Global ignores
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.env.generated
+secrets/
+downloads/
+chunks/
+*.log
+.DS_Store
