@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer';
+﻿import { Buffer } from 'buffer';
 import { getOldestPendingExecution, updateManifestStatus, downloadFileAsBuffer, Manifest } from "./services/driveService"
 import { extractTextFromPdf } from "./services/pdfService";
 import { analyzeGazetteText } from "./services/geminiService"
@@ -84,31 +84,42 @@ function getValidatedEmails(): string {
     const raw = process.env.EMAIL_RECIPIENTS;
     if (!raw) throw new Error("Falta la variable de entorno EMAIL_RECIPIENTS");
     const emails = raw.split(',').map(e => e.trim()).filter(e => e !== '');
-    if (emails.length === 0) throw new Error("EMAIL_RECIPIENTS no contiene direcciones válidas");
-    return emails.join(', ');
+
+    const validEmails = new Set<string>();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const email of emails) {
+        if (!emailRegex.test(email)) {
+            console.warn(`Formato de correo invalido omitido.`);
+            continue;
+        }
+        validEmails.add(email);
+    }
+
+    if (validEmails.size === 0) throw new Error("EMAIL_RECIPIENTS no contiene direcciones vÃ¡lidas");
+    return Array.from(validEmails).join(', ');
 }
 
 function validateManifest(manifest: Manifest) {
     if (!manifest.index_file || manifest.index_file.size === 0) {
-        throw new Error("Manifest inválido: Falta index_file o tamaño es 0.");
+        throw new Error("Manifest invÃ¡lido: Falta index_file o tamaÃ±o es 0.");
     }
-    
+
     if (manifest.expected_blocks !== manifest.uploaded_files.length) {
-        throw new Error(`Manifest inválido: expected_blocks (${manifest.expected_blocks}) != uploaded_files (${manifest.uploaded_files.length})`);
+        throw new Error(`Manifest invÃ¡lido: expected_blocks (${manifest.expected_blocks}) != uploaded_files (${manifest.uploaded_files.length})`);
     }
-    
-    // Ordenar por página de inicio para verificar continuidad
+
+    // Ordenar por pÃ¡gina de inicio para verificar continuidad
     const files = [...manifest.uploaded_files].sort((a, b) => a.start_page - b.start_page);
     let expectedNextPage = 1;
-    
+
     for (const f of files) {
-        if (f.size === 0) throw new Error(`Archivo ${f.name} tiene tamaño 0.`);
+        if (f.size === 0) throw new Error(`Archivo ${f.name} tiene tamaÃ±o 0.`);
         if (f.start_page !== expectedNextPage) {
             throw new Error(`Rango discontinuo en ${f.name}: se esperaba empezar en ${expectedNextPage} pero empieza en ${f.start_page}`);
         }
         expectedNextPage = f.end_page + 1;
     }
-    
+
     // Verificar duplicados
     const ids = new Set();
     for (const f of manifest.uploaded_files) {
@@ -120,18 +131,18 @@ function validateManifest(manifest: Manifest) {
 (async () => {
   let manifestToProcess: Manifest | null = null;
   try {
-    console.log('TANIA – INICIANDO PIPELINE DE PROCESAMIENTO');
-    
+    console.log('TANIA â€“ INICIANDO PIPELINE DE PROCESAMIENTO');
+
     const emailTo = getValidatedEmails();
-    
+
     manifestToProcess = await getOldestPendingExecution();
     if (!manifestToProcess) {
         console.log("No hay ejecuciones completas pendientes por procesar.");
         return;
     }
-    
-    console.log(`[+] Procesando ejecución: ${manifestToProcess.run_id} del ${manifestToProcess.date}`);
-    
+
+    console.log(`[+] Procesando ejecuciÃ³n: ${manifestToProcess.run_id} del ${manifestToProcess.date}`);
+
     try {
         validateManifest(manifestToProcess);
     } catch (valErr) {
@@ -139,11 +150,11 @@ function validateManifest(manifest: Manifest) {
         await updateManifestStatus(manifestToProcess, 'failed', { error: valErr.message });
         return;
     }
-    
+
     // Marcar en procesamiento
     await updateManifestStatus(manifestToProcess, 'processing');
-    
-    // 1. Cargar índice
+
+    // 1. Cargar Ã­ndice
     console.log("Cargando indice de normas desde Drive...");
     const indexBuf = await downloadFileAsBuffer(manifestToProcess.index_file!.id);
     const indexContent = JSON.parse(indexBuf.toString('utf-8'));
@@ -153,7 +164,7 @@ function validateManifest(manifest: Manifest) {
     }
     console.log(`Indice cargado (${Object.keys(indiceNormas).length} normas)`);
 
-    // 2. Cargar PDFs (ordenados por página inicial)
+    // 2. Cargar PDFs (ordenados por pÃ¡gina inicial)
     const sortedFiles = [...manifestToProcess.uploaded_files].sort((a, b) => a.start_page - b.start_page);
     const analysisResults: AnalysisResult[] = [];
 
@@ -162,21 +173,21 @@ function validateManifest(manifest: Manifest) {
       console.log(`\n[${i + 1}/${sortedFiles.length}] Procesando: ${f.name}`);
 
       const buffer = await downloadFileAsBuffer(f.id);
-      
+
       console.log("Extrayendo texto del PDF...");
       const pages = await extractTextFromPdf(buffer, (p) => console.log(`  Progreso: ${p}%`));
-      
+
       console.log("Analizando con Gemini...");
       const analysis = await analyzeWithRetry(pages);
       analysisResults.push(analysis);
-      
+
       await delay(5000);
     }
 
     console.log("\nConsolidando resultados...");
     const consolidatedAnalysis = consolidateAnalysisResults(analysisResults);
-    
-    // Override de fecha gazette a partir del manifest en lugar del PDF, es más seguro
+
+    // Override de fecha gazette a partir del manifest en lugar del PDF, es mÃ¡s seguro
     const day = manifestToProcess.date.substring(6,8);
     const month = manifestToProcess.date.substring(4,6);
     const year = manifestToProcess.date.substring(0,4);
@@ -193,20 +204,20 @@ function validateManifest(manifest: Manifest) {
     console.log('Generando CSVs...');
     const normsCsvBlob = generateCsvBlob(
       consolidatedAnalysis.norms.filter(n => n.relevanceToWaterSector !== 'Ninguna'),
-      { sector: 'Sector', normId: 'Norma', title: 'Título', publicationDate: 'Fecha', summary: 'Resumen', relevanceToWaterSector: 'Relevancia', pageNumber: 'Página' }
+      { sector: 'Sector', normId: 'Norma', title: 'TÃ­tulo', publicationDate: 'Fecha', summary: 'Resumen', relevanceToWaterSector: 'Relevancia', pageNumber: 'PÃ¡gina' }
     );
     const normsCsvBuffer = Buffer.from(await normsCsvBlob.arrayBuffer());
 
     const appointmentsCsvBlob = generateCsvBlob(
       [...consolidatedAnalysis.designatedAppointments, ...consolidatedAnalysis.concludedAppointments],
-      { institution: 'Institución', personName: 'Nombre', position: 'Cargo', summary: 'Resumen' }
+      { institution: 'InstituciÃ³n', personName: 'Nombre', position: 'Cargo', summary: 'Resumen' }
     );
     const appointmentsCsvBuffer = Buffer.from(await appointmentsCsvBlob.arrayBuffer());
 
-    // 4. Verificación Idempotente de Email
-    console.log('Verificando si ya se envió el correo para este run_id...');
+    // 4. VerificaciÃ³n Idempotente de Email
+    console.log('Verificando si ya se enviÃ³ el correo para este run_id...');
     let existingMsgId = await checkIfEmailSent(manifestToProcess.run_id);
-    
+
     if (existingMsgId) {
         console.log(`El correo ya fue enviado previamente. Message ID: ${existingMsgId}`);
     } else {
@@ -214,7 +225,7 @@ function validateManifest(manifest: Manifest) {
         existingMsgId = await sendEmailWithAttachments(
           emailTo,
           `TanIA, Analisis El Peruano (${consolidatedAnalysis.gazetteDate}) - RUN ID: ${manifestToProcess.run_id}`,
-          `Hola,\n\nSe adjunta el análisis automático del Diario Oficial El Peruano.\n\nSaludos,\nTanIA – El Peruano 2.0`,
+          `Hola,\n\nSe adjunta el anÃ¡lisis automÃ¡tico del Diario Oficial El Peruano.\n\nSaludos,\nTanIA â€“ El Peruano 2.0`,
           [
             { filename: `analisis-${manifestToProcess.date}.pdf`, mimeType: 'application/pdf', content: pdfBuffer },
             { filename: `analisis-${manifestToProcess.date}.docx`, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", content: wordBuffer },
@@ -231,8 +242,8 @@ function validateManifest(manifest: Manifest) {
         email_sent_at: new Date().toISOString()
     });
 
-    console.log("\nTANIA – PIPELINE COMPLETADO EXITOSAMENTE");
-    
+    console.log("\nTANIA â€“ PIPELINE COMPLETADO EXITOSAMENTE");
+
   } catch (error: any) {
     console.error("Error en el pipeline TanIA:", error);
     if (manifestToProcess) {

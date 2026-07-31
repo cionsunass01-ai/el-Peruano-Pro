@@ -1,9 +1,8 @@
 name: Run El Peruano Scraper + Upload to Drive (OAuth)
 
+# La programación automática está temporalmente deshabilitada porque la operación diaria se ejecuta desde la PC local mediante Windows Task Scheduler.
 on:
   workflow_dispatch: {}
-  schedule:
-    - cron: "30 10 * * *"  # 5:30 a.m. Perú (UTC-5)
 
 jobs:
   run:

@@ -1,10 +1,7 @@
 name: TanIA - Análisis Diario El Peruano
 
+# La programación automática está temporalmente deshabilitada porque la operación diaria se ejecuta desde la PC local mediante Windows Task Scheduler.
 on:
-  schedule:
-    # Todos los días a las 6:00 AM hora Perú (11:00 UTC)
-    - cron: "0 11 * * *"
-
   # Permite ejecución manual desde GitHub
   workflow_dispatch:
 
