@@ -32,6 +32,7 @@ services:
       - TZ=America/Lima
       - TARGET_DATE
       - FORCE_REPROCESS
+      - ORCHESTRATION_ID
     profiles: ["scraper"]
 
   backend:
