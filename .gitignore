@@ -10,3 +10,9 @@ downloads/
 chunks/
 *.log
 .DS_Store
+
+# Operativos y evidencias locales
+*.bak
+logs/
+run-result.json
+scratch_*.py
