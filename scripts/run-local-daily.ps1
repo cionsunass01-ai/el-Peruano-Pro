@@ -1,4 +1,4 @@
-﻿param (
+param (
     [switch]$DryRun,
     [string]$MockResult = "READY_FOR_BACKEND",
     [string]$MockJsonScenario = "VALID"
@@ -65,37 +65,39 @@ Set-Content -Path $LockFile -Value $lockContent -Force
 try {
     # 3. Verificando Docker
     if (-not $DryRun) {
-        try {
-            $dockerInfo = docker info 2>&1
-            $dockerAvailable = $?
-        } catch {
-            $dockerAvailable = $false
+        Write-Log "Verificando disponibilidad de Docker Engine..."
+        $dockerAvailable = $false
+        $maxRetries = 10
+        $retryWaitSeconds = 30
+        
+        for ($i = 1; $i -le $maxRetries; $i++) {
+            Write-Log "Intento $i de $maxRetries ejecutando 'docker info'..."
+            try {
+                $null = docker info 2>&1
+                if ($?) {
+                    $dockerAvailable = $true
+                    Write-Log "Docker Engine está disponible y respondiendo."
+                    break
+                }
+            } catch {}
+            
+            if ($i -lt $maxRetries) {
+                Write-Log "Docker aún no responde. Esperando $retryWaitSeconds segundos..."
+                # Opcional: Intentar iniciar Docker Desktop en el primer fallo
+                if ($i -eq 1) {
+                    $dockerDesktopExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+                    if (Test-Path $dockerDesktopExe) {
+                        Write-Log "Iniciando proceso de Docker Desktop en background..."
+                        Start-Process -FilePath $dockerDesktopExe -WindowStyle Hidden -ErrorAction SilentlyContinue
+                    }
+                }
+                Start-Sleep -Seconds $retryWaitSeconds
+            }
         }
 
         if (-not $dockerAvailable) {
-            Write-Log "Docker no disponible. Intentando iniciar Docker Desktop..."
-            $dockerDesktopExe = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-            if (Test-Path $dockerDesktopExe) {
-                Start-Process -FilePath $dockerDesktopExe -WindowStyle Hidden
-                $maxWait = 120
-                $waited = 0
-                while (-not $dockerAvailable -and $waited -lt $maxWait) {
-                    Start-Sleep -Seconds 5
-                    $waited += 5
-                    try {
-                        $null = docker info 2>&1
-                        $dockerAvailable = $?
-                    } catch {
-                        $dockerAvailable = $false
-                    }
-                }
-            }
-
-            if (-not $dockerAvailable) {
-                Write-Log "DOCKER_UNAVAILABLE: No se pudo conectar al motor de Docker. Terminando."
-                exit 1
-            }
-            Write-Log "Docker Desktop iniciado correctamente."
+            Write-Log "DOCKER_ERROR: Docker Engine no respondió después de $maxRetries intentos. Abortando."
+            exit 1
         }
     }
 

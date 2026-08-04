@@ -233,15 +233,27 @@ class ElPeruanoScraper:
             viewer_response = requests.get(viewer_url, headers=headers)
             
             from bs4 import BeautifulSoup
-            soup = BeautifulSoup(viewer_response.text, 'html.parser')
-            iframe = soup.find('iframe', id='visor_id')
+            import re
             
-            if not iframe or not iframe.get('src'):
-                self.logger.error("No se encontro el iframe #visor_id en la pagina del cuadernillo.")
+            pdf_url = None
+            
+            # 1. Intentar extraer la URL del PDF del estado de React (Nuevo formato de El Peruano)
+            match = re.search(r'urlPDF.*?(/api/archivo/file/[^\\",]+)', viewer_response.text)
+            if match:
+                pdf_path = match.group(1)
+                pdf_url = f"https://busquedas.elperuano.pe{pdf_path}"
+                self.logger.info(f"✓ URL real del PDF encontrada en React state: {pdf_url}")
+            else:
+                # 2. Fallback al iframe antiguo por si acaso
+                soup = BeautifulSoup(viewer_response.text, 'html.parser')
+                iframe = soup.find('iframe', id='visor_id')
+                if iframe and iframe.get('src'):
+                    pdf_url = iframe.get('src')
+                    self.logger.info(f"✓ URL real del PDF encontrada en iframe: {pdf_url}")
+            
+            if not pdf_url:
+                self.logger.error("No se encontro el PDF en el estado React ni en el iframe #visor_id.")
                 return None
-                
-            pdf_url = iframe.get('src')
-            self.logger.info(f"✓ URL real del PDF encontrada: {pdf_url}")
             
             self.logger.info("Descargando PDF...")
             output_path = Path(self.download_dir) / f"{date}_cuadernillo.pdf"
