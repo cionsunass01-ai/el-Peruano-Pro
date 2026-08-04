@@ -1,4 +1,4 @@
-﻿param (
+param (
     [switch]$Replace,
     [switch]$DryRun
 )
@@ -18,7 +18,7 @@ if ($existingTask -and -not $Replace) {
 $Principal = New-ScheduledTaskPrincipal -UserId $User -LogonType Interactive -RunLevel Limited
 $Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
 $Trigger = New-ScheduledTaskTrigger -Daily -At 05:30
-$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
+$Settings = New-ScheduledTaskSettingsSet -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
 
 if ($DryRun) {
     Write-Host "=== DRY RUN (SimulaciÃ³n de Registro) ==="
