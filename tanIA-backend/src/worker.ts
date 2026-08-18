@@ -1,4 +1,4 @@
-﻿import { Buffer } from 'buffer';
+import { Buffer } from 'buffer';
 import { getOldestPendingExecution, updateManifestStatus, downloadFileAsBuffer, Manifest } from "./services/driveService"
 import { extractTextFromPdf } from "./services/pdfService";
 import { analyzeGazetteText } from "./services/geminiService"
@@ -253,5 +253,6 @@ function validateManifest(manifest: Manifest) {
             console.error("No se pudo actualizar el estado de fallo:", e);
         }
     }
+    process.exit(1);
   }
 })();

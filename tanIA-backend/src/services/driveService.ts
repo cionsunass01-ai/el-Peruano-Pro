@@ -109,8 +109,12 @@ export async function getOldestPendingExecution(): Promise<Manifest | null> {
     
     if (pendingManifests.length === 0) return null;
     
-    // 3. Ordenar por created_at (más antiguo primero)
-    pendingManifests.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    // 3. Ordenar: priorizar 'complete' sobre 'failed', luego por fecha
+    pendingManifests.sort((a, b) => {
+        if (a.status === 'complete' && b.status === 'failed') return -1;
+        if (a.status === 'failed' && b.status === 'complete') return 1;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
     
     return pendingManifests[0];
 }
