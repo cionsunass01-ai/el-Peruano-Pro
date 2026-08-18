@@ -62,7 +62,7 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function analyzeWithRetry(pages: Array<{ page: number; text: string }>, maxRetries = 3): Promise<AnalysisResult> {
+async function analyzeWithRetry(pages: Array<{ page: number; text: string }>, maxRetries = 7): Promise<AnalysisResult> {
   let attempt = 0;
   let delayMs = 5000;
   while (true) {
