@@ -47,4 +47,6 @@ services:
       - GEMINI_MODEL
       - EMAIL_RECIPIENTS
       - GOOGLE_REDIRECT_URI
+      - TARGET_RUN_ID
+      - TARGET_DATE
     profiles: ["backend"]

@@ -71,7 +71,7 @@ async function analyzeWithRetry(pages: Array<{ page: number; text: string }>, ma
     } catch (error: any) {
       attempt++;
       const status = error?.status || error?.code;
-      const isRetryable = status === 503 || status === 'UNAVAILABLE' || error.message?.includes('overloaded') || error.message?.includes('fetch failed');
+      const isRetryable = status === 503 || status === 'UNAVAILABLE' || status === 429 || status === 'RESOURCE_EXHAUSTED' || error.message?.includes('overloaded') || error.message?.includes('fetch failed');
       if (!isRetryable || attempt > maxRetries) throw error;
       console.warn(`Gemini saturado (intento ${attempt}/${maxRetries}). Reintentando en ${delayMs / 1000}s...`);
       await delay(delayMs);

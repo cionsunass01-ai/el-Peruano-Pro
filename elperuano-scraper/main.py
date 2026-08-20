@@ -1,4 +1,4 @@
-﻿import os
+import os
 import uuid
 import sys
 from datetime import datetime, timezone
@@ -67,12 +67,19 @@ def main():
             manifest = get_manifest(folder_id)
             if manifest:
                 status = manifest.get("status")
-                if status in ["complete", "processed"]:
+                if status == "processed":
                     if force_reprocess:
                         logger.warning(f"El manifest estaba '{status}', pero FORCE_REPROCESS=true. Se procedera al reproceso reutilizando la carpeta.")
                     else:
-                        logger.info(f"El cuadernillo {date_str} ya fue descargado y registrado (Estado: {status}). Finalizando correctamente.")
+                        logger.info(f"El cuadernillo {date_str} ya fue procesado completamente (Estado: {status}). Finalizando correctamente.")
                         write_result("ALREADY_PROCESSED", date_str, message=f"Estado previo: {status}")
+                        return
+                elif status == "complete":
+                    if force_reprocess:
+                        logger.warning(f"El manifest estaba '{status}', pero FORCE_REPROCESS=true. Se procedera al reproceso reutilizando la carpeta.")
+                    else:
+                        logger.info(f"El cuadernillo {date_str} ya fue descargado y esta listo para el backend (Estado: {status}).")
+                        write_result("READY_FOR_BACKEND", date_str, run_id=manifest.get("run_id"), manifest_id=manifest.get("_drive_file_id"), message="Manifest existente en estado complete")
                         return
                 else:
                     logger.info(f"La carpeta existe pero el estado es '{status}'. Reutilizando la carpeta y reiniciando proceso.")

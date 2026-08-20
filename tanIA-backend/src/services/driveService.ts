@@ -86,7 +86,11 @@ export async function getOldestPendingExecution(): Promise<Manifest | null> {
             
             // Verificar si es candidato a ser procesado
             if (!manifest.email_sent) {
-                if (manifest.status === 'complete') {
+                if (process.env.TARGET_RUN_ID && manifest.run_id === process.env.TARGET_RUN_ID) {
+                    // Si se especificó un TARGET_RUN_ID y coincide, le damos prioridad absoluta
+                    pendingManifests.push(manifest);
+                }
+                else if (manifest.status === 'complete') {
                     pendingManifests.push(manifest);
                 } else if (manifest.status === 'processing') {
                     // Recuperar processing abandonado (ej. más de 1 hora)
@@ -97,9 +101,14 @@ export async function getOldestPendingExecution(): Promise<Manifest | null> {
                         pendingManifests.push(manifest);
                     }
                 } else if (manifest.status === 'failed') {
-                    // Recuperar failed para reintento (idealmente limitar con un contador)
-                    console.log(`Reintentando ejecución 'failed': ${manifest.run_id}`);
-                    pendingManifests.push(manifest);
+                    // Ignorar ejecuciones fallidas para evitar bloqueos infinitos
+                    // Se mantienen en Drive para revisión manual.
+                    if (process.env.TARGET_RUN_ID && manifest.run_id === process.env.TARGET_RUN_ID) {
+                         console.log(`Reintentando ejecución 'failed' específica por TARGET_RUN_ID: ${manifest.run_id}`);
+                         pendingManifests.push(manifest);
+                    } else {
+                         console.log(`Ignorando ejecución 'failed' antigua: ${manifest.run_id} para no bloquear envíos diarios.`);
+                    }
                 }
             }
         } catch (err) {
@@ -111,6 +120,12 @@ export async function getOldestPendingExecution(): Promise<Manifest | null> {
     
     // 3. Ordenar: priorizar 'complete' sobre 'failed', luego por fecha
     pendingManifests.sort((a, b) => {
+        // Priorizar TARGET_RUN_ID si existe
+        if (process.env.TARGET_RUN_ID) {
+            if (a.run_id === process.env.TARGET_RUN_ID && b.run_id !== process.env.TARGET_RUN_ID) return -1;
+            if (a.run_id !== process.env.TARGET_RUN_ID && b.run_id === process.env.TARGET_RUN_ID) return 1;
+        }
+
         if (a.status === 'complete' && b.status === 'failed') return -1;
         if (a.status === 'failed' && b.status === 'complete') return 1;
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -146,12 +161,25 @@ export async function downloadFileAsBuffer(fileId: string): Promise<Buffer> {
     const auth = getAuthClient();
     const drive = google.drive({ version: 'v3', auth });
     
-    const fileRes = await drive.files.get({
-        fileId: fileId,
-        alt: 'media'
-    }, { responseType: 'arraybuffer' });
-    
-    return Buffer.from(fileRes.data as ArrayBuffer);
+    let retries = 3;
+    let delay = 2000;
+    while (retries > 0) {
+        try {
+            const fileRes = await drive.files.get({
+                fileId: fileId,
+                alt: 'media'
+            }, { responseType: 'arraybuffer' });
+            
+            return Buffer.from(fileRes.data as ArrayBuffer);
+        } catch (error: any) {
+            retries--;
+            console.warn(`Error al descargar archivo ${fileId} de Drive. Intentos restantes: ${retries}. Detalles: ${error.message}`);
+            if (retries === 0) throw error;
+            await new Promise(res => setTimeout(res, delay));
+            delay *= 2;
+        }
+    }
+    throw new Error("Failed to download file after retries");
 }
 
 // Mantenemos compatibilidad de importación

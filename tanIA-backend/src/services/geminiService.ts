@@ -194,8 +194,9 @@ export const analyzeGazetteText = async (pagesText: Array<{ page: number; text: 
       concludedAppointments: parsedResult.concludedAppointments || []
     } as AnalysisResult;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en la llamada a Gemini:", error);
-    throw new Error("No se pudo completar el análisis legal. Verifique su conexión y API Key.");
+    // Re-lanzar el error original para que worker.ts pueda leer el status 503 y reintentar
+    throw error;
   }
 };
