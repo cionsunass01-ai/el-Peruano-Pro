@@ -13,6 +13,7 @@ import {
 } from "docx";
 import { AnalysisResult, Relevance } from "../types/domainTypes";
 import { normalizeNormId } from "../utils/normalizeNormId";
+import { isOperationallyReportable } from './reportPolicyService';
 import { IRunOptions, BorderStyle } from "docx";
 
 export const generateAnalysisWordBuffer = async (
@@ -23,9 +24,7 @@ export const generateAnalysisWordBuffer = async (
   const { gazetteDate, norms, designatedAppointments, concludedAppointments } = result;
 
   // --- MISMA lógica que PDF ---
-  const waterSectorNorms = norms.filter(
-    (n) => n.relevanceToWaterSector !== Relevance.NINGUNA
-  );
+  const waterSectorNorms = norms.filter(isOperationallyReportable);
 
   const relevanceOrder: Record<Relevance, number> = {
     [Relevance.ALTA]: 1,
@@ -103,7 +102,7 @@ export const generateAnalysisWordBuffer = async (
   });
 
   const summaryText =
-    `Se identificaron ${nNorms} norma(s) relevante(s) (ALTA/MEDIA/BAJA) y ` +
+    `Se identificaron ${nNorms} norma(s) operativamente reportable(s) (ALTA/MEDIA) y ` +
     `${nAppointments} movimiento(s) de cargos públicos (designaciones y conclusiones). ` +
     `Las normas se listan priorizadas por nivel de relevancia.`;
 

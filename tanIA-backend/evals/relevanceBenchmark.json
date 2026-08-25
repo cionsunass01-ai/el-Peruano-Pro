@@ -1,0 +1,101 @@
+[
+  {
+    "caseId": "WALDO-001-ANIN-EXPROPIACION",
+    "reportDate": "2026-08-06",
+    "normId": "R.J. N° 000104-2026-ANIN/JEF",
+    "title": "Aprueban ejecución de la expropiación de área afectada de inmueble por la ejecución de proyecto de infraestructura ubicada en distritos de la provincia de Chiclayo del departamento de Lambayeque y la provincia de San Miguel del departamento de Cajamarca, y su valor de tasación",
+    "expectedRelevance": "Ninguna",
+    "expectedOperationalVisibility": false,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "Waldo observó que la norma debía reducirse o excluirse por no estar vinculada materialmente con las funciones de SUNASS.",
+    "notes": "La etiqueta Ninguna es una inferencia operativa provisional basada en el feedback; no se presenta como una confirmación expresa de Waldo del nivel final. El objeto identificado es una expropiación para un proyecto de protección contra inundaciones."
+  },
+  {
+    "caseId": "WALDO-002-MEF-TRANSFERENCIA",
+    "reportDate": "2026-08-06",
+    "normId": "D.S. N° 155-2026-EF",
+    "title": "Decreto Supremo que autoriza Transferencia de Partidas en el Presupuesto del Sector Público para el Año Fiscal 2026 a favor de la Reserva de Contingencia",
+    "expectedRelevance": "Alta",
+    "expectedOperationalVisibility": true,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "Waldo sugirió elevar la relevancia porque identificó una relación con inversiones públicas, cierre de brechas y continuidad de servicios del Estado.",
+    "notes": "La etiqueta Alta es provisional y no constituye una confirmación expresa del nivel final por Waldo."
+  },
+  {
+    "caseId": "WALDO-003-SMP-RESIDUOS",
+    "reportDate": "2026-08-08",
+    "normId": "ORDENANZA Nº 593/MDSMP",
+    "title": "Ordenanza que aprueba el Plan de Manejo de Residuos Sólidos del distrito de San Martín de Porres 2026 - 2030",
+    "expectedRelevance": "Baja",
+    "expectedOperationalVisibility": false,
+    "provenance": "WALDO_EXPLICITO",
+    "waldoFeedback": "Waldo sugirió excluir este tipo de normas del resultado operativo y asignarle una relevancia baja.",
+    "notes": "La etiqueta Baja se conserva como benchmark operativo provisional; el comentario expresa una dirección de tratamiento, pero no se usa para afirmar una taxonomía definitiva."
+  },
+  {
+    "caseId": "WALDO-004-INEI-REAJUSTE",
+    "reportDate": "2026-08-19",
+    "normId": "R.J. N° 188-2026-INEI",
+    "title": "Aprueban Factores de Reajuste que debe aplicarse a las obras de edificación, correspondiente a las trece (13) Áreas Geográficas para las Obras del Sector Privado, producidas en el mes de julio de 2026",
+    "expectedRelevance": "Alta",
+    "expectedOperationalVisibility": true,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "El feedback operativo identificó que la norma debía recibir una relevancia mayor por su relación con factores de reajuste aplicables a obras de edificación.",
+    "notes": "La etiqueta Alta es una inferencia operativa provisional y requiere validación del usuario final."
+  },
+  {
+    "caseId": "WALDO-005-UCAYALI-ROF",
+    "reportDate": "2026-08-20",
+    "normId": "ORDENANZA REGIONAL Nº 007-2026-GRU-CR",
+    "title": "Ordenanza Regional que modifica parcialmente el texto del Reglamento de Organización y Funciones y la Estructura Orgánica del Gobierno Regional de Ucayali",
+    "expectedRelevance": "Ninguna",
+    "expectedOperationalVisibility": false,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "Waldo sugirió reglas excluyentes: aunque la norma modifica un ROF, corresponde a una entidad distinta de SUNASS y no debería recibir relevancia alta.",
+    "notes": "La etiqueta Ninguna es provisional. La observación no fijó expresamente el nivel final Ninguna."
+  },
+  {
+    "caseId": "WALDO-006-INDECI-EMERGENCIAS",
+    "reportDate": "2026-08-20",
+    "normId": "R.J. N° 000232-2026-INDECI/JEF",
+    "title": "Aprueban el Lineamiento para la formulación del Informe de acciones realizadas y resultados obtenidos de intervenciones en niveles de emergencia 4 y 5, que presentan las entidades del Gobierno nacional, Gobiernos Regionales y Gobiernos Locales, al Instituto Nacional de Defensa Civil; producto de las modificaciones presupuestarias en el nivel funcional programático del Programa Presupuestal 0068, y sus Anexos",
+    "expectedRelevance": "Alta",
+    "expectedOperationalVisibility": true,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "Waldo sugirió elevar la relevancia por el alcance del lineamiento a entidades del Gobierno nacional, gobiernos regionales y locales en materia de emergencias.",
+    "notes": "La etiqueta Alta es provisional. El caso incluye las variantes históricas N° 000232-2026-INDECI/JEF y R.J. N° 000232-2026-INDECI/JEF para evaluar matching seguro."
+  },
+  {
+    "caseId": "WALDO-007-SERVIR-126",
+    "reportDate": "2026-08-20",
+    "normId": "N° 000126-2026-SERVIR-PE",
+    "title": "Formalizan Acuerdo que aprueba la Directiva N° 001-2026-SERVIR: Lineamientos que regulan el ejercicio de la atribución supervisora de la Autoridad Nacional del Servicio Civil",
+    "expectedRelevance": "Media",
+    "expectedOperationalVisibility": true,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "El feedback operativo consideró que la directiva de SERVIR podía tener una relación institucional transversal con SUNASS.",
+    "notes": "La etiqueta Media es una inferencia operativa provisional; debe validarse si la obligación es realmente aplicable a SUNASS."
+  },
+  {
+    "caseId": "WALDO-008-SERVIR-127",
+    "reportDate": "2026-08-20",
+    "normId": "N° 000127-2026-SERVIR-PE",
+    "title": "Formalizan Acuerdo mediante el cual se aprueba la Directiva N° 0002-2026-SERVIR: Lineamientos para la planificación, medición y análisis de los indicadores de gestión de recursos humanos en las entidades públicas",
+    "expectedRelevance": "Media",
+    "expectedOperationalVisibility": true,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "El feedback operativo consideró que los lineamientos de gestión de recursos humanos podían tener una relación institucional transversal con SUNASS.",
+    "notes": "La etiqueta Media es una inferencia operativa provisional; no se afirma que Waldo haya confirmado expresamente el nivel final."
+  },
+  {
+    "caseId": "WALDO-009-SENCICO-CARGOS",
+    "reportDate": "2026-08-21",
+    "normId": "RESOLUCIÓN N° 000136-2026-03.00/SENCICO",
+    "title": "Aprueban modificación del Manual de Clasificador de Cargos del SENCICO",
+    "expectedRelevance": "Ninguna",
+    "expectedOperationalVisibility": false,
+    "provenance": "INFERENCIA_OPERATIVA_PROVISIONAL",
+    "waldoFeedback": "Waldo observó que la coincidencia con saneamiento no debía hacer relevante una norma sobre cargos de una entidad distinta de SUNASS.",
+    "notes": "La etiqueta Ninguna es provisional. La observación apunta a excluir la norma, pero no se registra como confirmación expresa del nivel final."
+  }
+]

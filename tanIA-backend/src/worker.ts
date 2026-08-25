@@ -2,7 +2,7 @@ import { Buffer } from 'buffer';
 import { getOldestPendingExecution, updateManifestStatus, downloadFileAsBuffer, Manifest } from "./services/driveService"
 import { extractTextFromPdf } from "./services/pdfService";
 import { analyzeGazetteText } from "./services/geminiService"
-import { AnalysisResult, Norm, Appointment } from "./types/domainTypes";
+import { AnalysisResult } from "./types/domainTypes";
 import { generateAnalysisWordBuffer } from "./services/wordService";
 import { normalizeNormId } from './utils/normalizeNormId';
 
@@ -11,52 +11,9 @@ import {
   generateCsvBlob
 } from "./services/reportGenerator";
 import { sendEmailWithAttachments, checkIfEmailSent } from './services/gmailService';
-
-function consolidateAnalysisResults(results: AnalysisResult[]): AnalysisResult {
-  if (results.length === 0) {
-    return {
-      gazetteDate: "Fecha no encontrada",
-      norms: [],
-      designatedAppointments: [],
-      concludedAppointments: []
-    };
-  }
-
-  const gazetteDate = results[results.length - 1].gazetteDate;
-
-  const normsMap = new Map<string, Norm>();
-  for (const result of results) {
-    for (const norm of result.norms) {
-      const key = norm.normId;
-      if (!normsMap.has(key)) normsMap.set(key, norm);
-    }
-  }
-
-  const appointmentKey = (a: Appointment): string => `${a.institution}|${a.personName}|${a.position}`;
-
-  const designatedMap = new Map<string, Appointment>();
-  for (const result of results) {
-    for (const appt of result.designatedAppointments) {
-      const key = appointmentKey(appt);
-      if (!designatedMap.has(key)) designatedMap.set(key, appt);
-    }
-  }
-
-  const concludedMap = new Map<string, Appointment>();
-  for (const result of results) {
-    for (const appt of result.concludedAppointments) {
-      const key = appointmentKey(appt);
-      if (!concludedMap.has(key)) concludedMap.set(key, appt);
-    }
-  }
-
-  return {
-    gazetteDate,
-    norms: Array.from(normsMap.values()),
-    designatedAppointments: Array.from(designatedMap.values()),
-    concludedAppointments: Array.from(concludedMap.values())
-  };
-}
+import { consolidateAnalysisResults } from './services/consolidationService';
+import { validateManifestPageRanges } from './services/pageMappingService';
+import { isOperationallyReportable } from './services/reportPolicyService';
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -108,17 +65,13 @@ function validateManifest(manifest: Manifest) {
         throw new Error(`Manifest invÃ¡lido: expected_blocks (${manifest.expected_blocks}) != uploaded_files (${manifest.uploaded_files.length})`);
     }
 
-    // Ordenar por pÃ¡gina de inicio para verificar continuidad
     const files = [...manifest.uploaded_files].sort((a, b) => a.start_page - b.start_page);
-    let expectedNextPage = 1;
 
     for (const f of files) {
         if (f.size === 0) throw new Error(`Archivo ${f.name} tiene tamaÃ±o 0.`);
-        if (f.start_page !== expectedNextPage) {
-            throw new Error(`Rango discontinuo en ${f.name}: se esperaba empezar en ${expectedNextPage} pero empieza en ${f.start_page}`);
-        }
-        expectedNextPage = f.end_page + 1;
     }
+
+    validateManifestPageRanges(files, manifest.total_pages);
 
     // Verificar duplicados
     const ids = new Set();
@@ -174,8 +127,16 @@ function validateManifest(manifest: Manifest) {
 
       const buffer = await downloadFileAsBuffer(f.id);
 
-      console.log("Extrayendo texto del PDF...");
-      const pages = await extractTextFromPdf(buffer, (p) => console.log(`  Progreso: ${p}%`));
+      console.log(`Extrayendo texto del PDF (páginas globales ${f.start_page}-${f.end_page})...`);
+      const pages = await extractTextFromPdf(
+        buffer,
+        (p) => console.log(`  Progreso: ${p}%`),
+        {
+          startPage: f.start_page,
+          endPage: f.end_page,
+          totalPages: manifestToProcess.total_pages,
+        },
+      );
 
       console.log("Analizando con Gemini...");
       const analysis = await analyzeWithRetry(pages);
@@ -186,6 +147,17 @@ function validateManifest(manifest: Manifest) {
 
     console.log("\nConsolidando resultados...");
     const consolidatedAnalysis = consolidateAnalysisResults(analysisResults);
+
+    if (consolidatedAnalysis.normConflicts?.length) {
+      for (const conflict of consolidatedAnalysis.normConflicts) {
+        console.warn(
+          `[NORM CONFLICT] ${conflict.normalizedKey}: ` +
+          `campos=${conflict.conflictingFields.join(',')} ` +
+          `ocurrencias=${conflict.occurrenceCount} ` +
+          `seleccionado=${conflict.selectedNormId}`
+        );
+      }
+    }
 
     // Override de fecha gazette a partir del manifest en lugar del PDF, es mÃ¡s seguro
     const day = manifestToProcess.date.substring(6,8);
@@ -203,7 +175,7 @@ function validateManifest(manifest: Manifest) {
 
     console.log('Generando CSVs...');
     const normsCsvBlob = generateCsvBlob(
-      consolidatedAnalysis.norms.filter(n => n.relevanceToWaterSector !== 'Ninguna'),
+      consolidatedAnalysis.norms.filter(isOperationallyReportable),
       { sector: 'Sector', normId: 'Norma', title: 'TÃ­tulo', publicationDate: 'Fecha', summary: 'Resumen', relevanceToWaterSector: 'Relevancia', pageNumber: 'PÃ¡gina' }
     );
     const normsCsvBuffer = Buffer.from(await normsCsvBlob.arrayBuffer());

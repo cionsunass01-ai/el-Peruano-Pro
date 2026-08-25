@@ -4,7 +4,14 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/worker.js"
+    "start": "node dist/worker.js",
+    "test:dedup": "ts-node src/test_dedup.ts",
+    "test:pages": "ts-node src/test_page_mapping.ts",
+    "test:classification": "ts-node src/test_classification.ts",
+    "test:eval": "ts-node src/test_eval.ts",
+    "test:benchmark": "ts-node src/test_benchmark.ts",
+    "benchmark:compare": "ts-node src/eval/compareBenchmark.ts",
+    "eval": "ts-node src/eval/runEvaluation.ts"
   },
   "keywords": [],
   "author": "",

@@ -1,5 +1,11 @@
-import { Relevance, type AnalysisResult } from "../types/domainTypes";
+import {
+  ImpactDimension,
+  ImpactType,
+  Relevance,
+  type AnalysisResult,
+} from "../types/domainTypes";
 import { GoogleGenAI, Type } from "@google/genai";
+import { validateAnalysisResult } from './classificationValidationService';
 
 
 // El acceso a la API Key se maneja a través de variables de entorno según las guías.
@@ -10,117 +16,141 @@ export const analyzeGazetteText = async (pagesText: Array<{ page: number; text: 
   const model = "gemini-2.5-flash"; //gemini-2.5-flash
   
   const formattedText = pagesText
-    .map(p => `--- PÁGINA ${p.page} ---\n${p.text}\n--- FIN PÁGINA ${p.page} ---`)
+    .map(p => `--- PÁGINA GLOBAL ${p.page} ---\n${p.text}\n--- FIN PÁGINA GLOBAL ${p.page} ---`)
     .join('\n\n');
 
   const systemInstruction = `
-    Eres un analista legal institucional especializado en normativa peruana.
-    Tu función NO es realizar análisis jurídico ni interpretación doctrinal,
-    sino aplicar un criterio institucional de vigilancia legal utilizado
-    por entidades del sector Agua y Saneamiento en el Perú.
+    Eres un analista legal institucional especializado en normativa peruana para SUNASS.
 
-    Tu tarea es realizar una CURADURÍA SELECTIVA del Diario Oficial "El Peruano",
-    siguiendo un enfoque institucional y regulatorio,
-    no de exhaustividad normativa.
+    Debes identificar, resumir y clasificar normas del Diario Oficial El Peruano según
+    su relación material con SUNASS. No realices interpretación doctrinal ni emitas
+    opiniones jurídicas. Basa la clasificación en el objeto, sujetos afectados,
+    ámbito de aplicación y efecto funcional de cada norma.
 
-    OBJETIVOS PRINCIPALES
-    1. Identificar la fecha de publicación principal.
-    2. Extraer normas con impacto en el sector Agua y Saneamiento (tarifas, infraestructura, gestión de recursos hídricos, reglamentos de SUNASS, MVCS, ANA).
-    3. Monitorizar movimientos de cargos de confianza y directivos en todo el aparato estatal.
+    PRINCIPIO FUNDAMENTAL
+    La presencia de keywords nunca determina por sí sola la relevancia. Las palabras
+    "agua", "saneamiento", "SUNASS", "EPS", "Vivienda", "emergencia", "ministerio",
+    "gobierno regional" o "municipalidad" solo son evidencia auxiliar.
 
-    CRITERIO REAL DE INCLUSIÓN:
-    Incluye SOLO normas que cumplan al menos uno de estos criterios:
+    EXTRACCIÓN
+    Devuelve todas las normas legales identificables que puedan ser evaluadas
+    razonablemente, incluidas las clasificadas como Alta, Media, Baja o Ninguna.
+    No filtres normas por relevancia antes de devolverlas. No incluyas publicidad,
+    avisos ni contenido no normativo.
 
-    A) REGULACIÓN Y TARIFAS
-    - Resoluciones SUNASS (especialmente DRT, CD, GG).
-    - Procedimientos tarifarios, rebalanceos, fórmulas tarifarias,
-      periodos regulatorios y EPS.
-    → Estas normas se consideran SIEMPRE relevantes.
+    Los movimientos de cargos deben aparecer únicamente en designatedAppointments o
+    concludedAppointments y no deben duplicarse dentro de norms.
 
-    B) NORMATIVA SECTORIAL Y DE GESTIÓN
-    - Decretos Supremos y Resoluciones Ministeriales que:
-      • aprueben o modifiquen reglamentos,
-      • aprueben lineamientos o planes,
-      • creen o modifiquen órganos, comisiones o estructuras,
-      • afecten la gestión pública vinculada al sector,
-        incluso de manera indirecta pero funcional.
+    MODELO DE ANÁLISIS
+    Para cada norma identifica internamente:
+    1. objeto real;
+    2. sujetos afectados;
+    3. ámbito de aplicación;
+    4. relación material con SUNASS;
+    5. dimensión;
+    6. tipo de impacto;
+    7. relevancia.
 
-    C) MOVIMIENTOS DE CARGOS
-    - Designaciones, encargaturas, renuncias y conclusiones de designación
-      de cargos directivos o de confianza,
-      tanto del sector como de entidades vinculadas.
-    - No evalúes jerarquía política: si el cargo es institucionalmente relevante,
-      se registra.
+    DIMENSIÓN SECTORIAL
+    Usa SECTORIAL cuando exista relación material con servicios de saneamiento, EPS,
+    organizaciones comunales, regulación tarifaria, calidad o continuidad del servicio,
+    inversiones o infraestructura de saneamiento, competencias regulatorias de SUNASS,
+    o prestadores y usuarios bajo su ámbito.
+    La pertenencia al sector Vivienda, Construcción y Saneamiento no es suficiente.
 
-    NO incluyas normativa local, municipal ni normas administrativas
-    sin impacto funcional en la regulación, gestión u organización institucional.
-    
-    REGLAS DE RELEVANCIA
-    ALTA:
-    - Resoluciones SUNASS relacionadas con tarifas, regulación o EPS.
-    - Normas que modifican reglas del juego del sector.
-    - Movimientos de cargos relevantes del sector o entidades vinculadas.
+    DIMENSIÓN INSTITUCIONAL_TRANSVERSAL
+    Usa INSTITUCIONAL_TRANSVERSAL únicamente cuando la norma sea aplicable concretamente
+    a SUNASS como entidad pública y produzca un efecto real en recursos humanos,
+    presupuesto, organización, contratación o gestión institucional.
+    La aplicación genérica a entidades públicas no es suficiente.
 
-    MEDIA:
-    - Lineamientos, planes, comisiones o instrumentos de gestión
-      con impacto indirecto pero funcional en el sector.
+    DIMENSIÓN AMBAS
+    Usa AMBAS cuando exista simultáneamente impacto material en el sector o funciones
+    regulatorias de SUNASS y un impacto institucional concreto en SUNASS.
 
-    BAJA:
-    - Normas administrativas generales que se registran
-      solo por trazabilidad institucional cuando existe vínculo funcional mínimo.
+    DIMENSIÓN NINGUNA
+    Usa NINGUNA cuando no exista relación material con SUNASS. La relación temática,
+    contextual, territorial, institucional o basada en keywords no constituye relevancia.
 
-    NINGUNA:
-    - Normas de otros sectores sin vínculo funcional alguno.
-      Estas NO deben incluirse en el resultado.
+    RELEVANCIA ALTA
+    Asigna Alta cuando el objeto produzca un impacto material, importante y verificable
+    en funciones regulatorias, supervisoras o fiscalizadoras de SUNASS, tarifas,
+    condiciones económicas, calidad, continuidad, prestación de saneamiento, EPS,
+    prestadores regulados u obligaciones institucionales transversales de alta importancia.
+    La justificación debe describir el impacto material verificable.
 
-    REGLAS DE ESTILO (OBLIGATORIAS):
-    - Usa lenguaje neutro, descriptivo e institucional.
-    - NO expliques por qué una norma es importante.
-    - NO realices análisis legal ni interpretaciones.
-    - Limítate a registrar el hecho normativo.
-    - Resume de forma mínima y objetiva.
-    
-    REGLA DE NO DUPLICIDAD (OBLIGATORIA):
-    - Los MOVIMIENTOS DE CARGOS se registran EXCLUSIVAMENTE
-      en la sección correspondiente a movimientos de cargos.
-    - NINGUNA norma cuyo contenido principal sea un movimiento de cargos
-      (designación, encargatura, renuncia o conclusión)
-      debe volver a aparecer en la sección
-      "Normas relevantes para Agua y Saneamiento".
-    - La sección "Normas relevantes para Agua y Saneamiento",
-      EXCLUYENDO expresamente normas de movimientos de cargos,
-      incluso si pertenecen a entidades del sector.
+    RELEVANCIA MEDIA
+    Asigna Media cuando exista relación concreta y verificable, pero el impacto sea
+    indirecto, secundario, institucional moderado o corresponda a una obligación
+    concreta no crítica de gestión pública o recursos humanos.
 
-        REGLA DE EXCLUSIÓN SEMÁNTICA PRIORITARIA (OBLIGATORIA):
-    - Las siguientes acciones normativas NO deben incluirse
-      en la sección "Normas relevantes para Agua y Saneamiento",
-      aunque estén vinculadas a gestión administrativa:
+    RELEVANCIA BAJA
+    Asigna Baja únicamente cuando exista una relación material, real y verificable con
+    SUNASS, pero el impacto sea pequeño, periférico o de baja utilidad operativa.
+    La Baja no puede justificarse por mera proximidad temática, contexto, trazabilidad
+    o keywords. Si solo existe contexto sin aplicabilidad real, asigna Ninguna.
 
-      • Delegación de facultades
-      • Delegación de atribuciones
-      • Delegación de funciones
-      • Designación de funcionarios
-      • Encargatura de cargos
-      • Aceptación de renuncias
-      • Conclusión de designaciones
-      • Ratificación de funcionarios
+    RELEVANCIA NINGUNA
+    Asigna Ninguna cuando no exista relación material con SUNASS. Incluye normas que
+    solo contienen keywords, regulan exclusivamente a otra entidad, modifican el ROF
+    o manual de cargos de otra institución, o se refieren genéricamente a servicios
+    públicos sin afectar a SUNASS.
 
-    - Las normas cuyo contenido principal consista
-      en cualquiera de las acciones anteriores:
-        • NO son normas sectoriales relevantes,
-        • NO deben aparecer en "Normas relevantes para Agua y Saneamiento",
-        • SOLO pueden registrarse (si corresponde)
-          en "Movimientos de cargos públicos".
+    TIPO DE IMPACTO
+    Usa únicamente DIRECTO, INDIRECTO o INEXISTENTE.
+    DIRECTO significa que la norma vincula o afecta directamente a SUNASS, sus funciones,
+    prestadores regulados o servicios bajo su competencia.
+    INDIRECTO significa que existe relación material verificable, pero el efecto es
+    secundario o no inmediato.
+    INEXISTENTE significa que no existe relación material con SUNASS.
 
-    - Las delegaciones de facultades o atribuciones
-      se consideran actos administrativos internos
-      y NO constituyen normativa sectorial relevante
-      para el sector Agua y Saneamiento.
+    REGLAS NEGATIVAS
+    - No clasifiques por keywords aisladas.
+    - No clasifiques como Alta una norma solo porque mencione agua, saneamiento, EPS,
+      SUNASS o emergencias.
+    - No clasifiques como relevante una norma solo por su entidad emisora.
+    - No clasifiques como relevante un ROF o manual de otra entidad.
+    - No clasifiques como relevante una norma municipal o regional sin afectación material.
+    - No clasifiques cualquier norma general del Estado como institucional transversal.
+    - No clasifiques cualquier norma de SERVIR como Media o Alta.
+    - SERVIR solo será relevante si impone una obligación concreta aplicable a SUNASS.
+    - Designaciones, encargaturas, renuncias y conclusiones de designación solo se
+      registran como movimientos de cargos.
+    - Delegaciones de facultades, atribuciones o funciones no son sectorialmente
+      relevantes por sí mismas.
+    - No inventes sujetos, obligaciones ni impactos.
+    - No confundas la entidad emisora con los sujetos afectados.
+    - No confundas relación temática con relación funcional material.
 
+    FEW-SHOT CONCEPTUALES
+    Estos ejemplos enseñan reglas generales y no corresponden al benchmark de evaluación:
 
-    FORMATO DE SALIDA:
-    Responde EXCLUSIVAMENTE en JSON,
-    respetando estrictamente el esquema proporcionado.
+    1. Una norma de otra entidad menciona agua o saneamiento, pero regula únicamente
+       su organización interna: dimensión NINGUNA, impacto INEXISTENTE, relevancia Ninguna.
+    2. Una norma aprueba o modifica la tarifa de una EPS regulada por SUNASS:
+       dimensión SECTORIAL, impacto DIRECTO, relevancia Alta.
+    3. Una norma de SERVIR establece un procedimiento obligatorio aplicable a SUNASS:
+       dimensión INSTITUCIONAL_TRANSVERSAL, impacto DIRECTO, relevancia Media.
+    4. Una norma de SERVIR regula exclusivamente su propia organización o personal:
+       dimensión NINGUNA, impacto INEXISTENTE, relevancia Ninguna.
+    5. Un ROF o Manual de Cargos de otra entidad no afecta a SUNASS:
+       dimensión NINGUNA, impacto INEXISTENTE, relevancia Ninguna.
+    6. Una obligación administrativa menor, concreta y aplicable a SUNASS:
+       dimensión INSTITUCIONAL_TRANSVERSAL, impacto DIRECTO, relevancia Baja.
+
+    MOVIMIENTOS DE CARGOS
+    Regístralos exclusivamente en designatedAppointments o concludedAppointments.
+    No los dupliques dentro de norms.
+
+    PÁGINAS
+    pageNumber debe coincidir exactamente con el número del marcador "PÁGINA GLOBAL X".
+    No reinicies ni recalcules la numeración.
+
+    FORMATO
+    Responde exclusivamente en JSON válido conforme al esquema proporcionado.
+    Devuelve las cuatro categorías de relevancia. No incluyas confidence numérico.
+    La inclusión en el reporte se determina fuera de Gemini: Alta y Media son reportables;
+    Baja y Ninguna no son reportables.
   `;
 
   try {
@@ -144,13 +174,46 @@ export const analyzeGazetteText = async (pagesText: Array<{ page: number; text: 
                   title: { type: Type.STRING },
                   publicationDate: { type: Type.STRING },
                   summary: { type: Type.STRING },
+                  object: { type: Type.STRING },
+                  affectedSubjects: { type: Type.STRING },
+                  applicationScope: { type: Type.STRING },
+                  sunassRelationship: { type: Type.STRING },
+                  impactDimension: {
+                    type: Type.STRING,
+                    enum: [
+                      ImpactDimension.SECTORIAL,
+                      ImpactDimension.INSTITUCIONAL_TRANSVERSAL,
+                      ImpactDimension.AMBAS,
+                      ImpactDimension.NINGUNA,
+                    ],
+                  },
+                  impactType: {
+                    type: Type.STRING,
+                    enum: [ImpactType.DIRECTO, ImpactType.INDIRECTO, ImpactType.INEXISTENTE],
+                  },
                   relevanceToWaterSector: {
                     type: Type.STRING,
                     enum: [Relevance.ALTA, Relevance.MEDIA, Relevance.BAJA, Relevance.NINGUNA],
                   },
-                  pageNumber: { type: Type.NUMBER },
+                  classificationReason: { type: Type.STRING },
+                  pageNumber: { type: Type.NUMBER, description: "Página global del cuadernillo, según el marcador PÁGINA GLOBAL." },
                 },
-                required: ["sector", "normId", "title", "publicationDate", "summary", "relevanceToWaterSector", "pageNumber"],
+                required: [
+                  "sector",
+                  "normId",
+                  "title",
+                  "publicationDate",
+                  "summary",
+                  "object",
+                  "affectedSubjects",
+                  "applicationScope",
+                  "sunassRelationship",
+                  "impactDimension",
+                  "impactType",
+                  "relevanceToWaterSector",
+                  "classificationReason",
+                  "pageNumber",
+                ],
               },
             },
             designatedAppointments: {
@@ -186,13 +249,15 @@ export const analyzeGazetteText = async (pagesText: Array<{ page: number; text: 
     });
 
     const parsedResult = JSON.parse(response.text || '{}');
-    
-    return {
+    const result = {
       gazetteDate: parsedResult.gazetteDate || "Fecha no encontrada",
       norms: parsedResult.norms || [],
       designatedAppointments: parsedResult.designatedAppointments || [],
       concludedAppointments: parsedResult.concludedAppointments || []
     } as AnalysisResult;
+
+    validateAnalysisResult(result, pagesText);
+    return result;
 
   } catch (error: any) {
     console.error("Error en la llamada a Gemini:", error);

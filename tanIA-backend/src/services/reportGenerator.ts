@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { AnalysisResult, Relevance } from '../types/domainTypes';
 import { normalizeNormId } from '../utils/normalizeNormId';
+import { isOperationallyReportable } from './reportPolicyService';
 
 
 /**
@@ -75,7 +76,7 @@ export const generateAnalysisPdfBlob = (result: AnalysisResult, fileName: string
   const safeText = (v: any) => String(v ?? '').trim();
 
   // --- Data prep ---
-  const waterSectorNorms = norms.filter((n) => n.relevanceToWaterSector !== Relevance.NINGUNA);
+  const waterSectorNorms = norms.filter(isOperationallyReportable);
 
   const relevanceOrder: Record<Relevance, number> = {
     [Relevance.ALTA]: 1,
@@ -189,7 +190,7 @@ export const generateAnalysisPdfBlob = (result: AnalysisResult, fileName: string
   const nAppointments = allAppointments.length;
 
   const summaryText =
-    `Se identificaron ${nNorms} norma(s) relevante(s) (ALTA/MEDIA/BAJA) y ` +
+    `Se identificaron ${nNorms} norma(s) operativamente reportable(s) (ALTA/MEDIA) y ` +
     `${nAppointments} movimiento(s) de cargos públicos (designaciones y conclusiones). ` +
     `Las normas se listan priorizadas por nivel de relevancia.`;
 
@@ -280,7 +281,7 @@ export const generateAnalysisPdfBlob = (result: AnalysisResult, fileName: string
   if (sortedWaterSectorNorms.length > 0) {
     addSectionTitle(
       'Normas relevantes para Agua y Saneamiento',
-      'Ordenadas por relevancia (ALTA → MEDIA → BAJA).'
+      'Ordenadas por relevancia (ALTA → MEDIA).'
     );
 
     const headers = ['Relevancia', 'Sector', 'Norma', 'Pág.'];
