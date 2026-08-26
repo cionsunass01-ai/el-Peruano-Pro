@@ -5,7 +5,11 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectPath = "C:\Users\cion\Downloads\elPeruano"
+if ($PSScriptRoot) {
+    $ProjectPath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+} else {
+    $ProjectPath = Get-Location
+}
 Set-Location -Path $ProjectPath
 
 $DateStr = Get-Date -Format "yyyyMMdd"
@@ -155,7 +159,7 @@ try {
             $scraperExitCode = 0
         } else {
             Write-Log "Ejecutando Scraper en Docker..."
-            & docker compose --profile scraper run --rm scraper
+            & docker compose --profile scraper run --rm --build scraper
             $scraperExitCode = $LASTEXITCODE
             Write-Log "Scraper exit code: $scraperExitCode"
         }
@@ -239,7 +243,7 @@ try {
             Write-Log "[DryRun] Backend would run"
             $backendExitCode = 0
         } else {
-            & docker compose --profile backend run --rm backend
+            & docker compose --profile backend run --rm --build backend
             $backendExitCode = $LASTEXITCODE
         }
         Write-Log "Backend exit code: $backendExitCode"

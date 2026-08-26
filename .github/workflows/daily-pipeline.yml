@@ -1,0 +1,56 @@
+name: Daily Pipeline - El Peruano (SUNASS)
+
+on:
+  schedule:
+    # Programación diaria a las 05:30 AM America/Lima (UTC-5 -> 10:30 UTC)
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Fecha objetivo (formato YYYYMMDD, opcional)'
+        required: false
+        default: ''
+      force_reprocess:
+        description: 'Forzar reprocesamiento (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar archivo de entorno .env desde GitHub Secrets
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
+          TARGET_DATE: ${{ github.event.inputs.target_date }}
+          FORCE_REPROCESS: ${{ github.event.inputs.force_reprocess || 'false' }}
+        run: |
+          cat <<EOF > .env
+          GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+          GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+          GOOGLE_REFRESH_TOKEN=$GOOGLE_REFRESH_TOKEN
+          GOOGLE_REDIRECT_URI=$GOOGLE_REDIRECT_URI
+          GOOGLE_DRIVE_FOLDER_ID=$GOOGLE_DRIVE_FOLDER_ID
+          GEMINI_API_KEY=$GEMINI_API_KEY
+          GEMINI_MODEL=$GEMINI_MODEL
+          EMAIL_RECIPIENTS=$EMAIL_RECIPIENTS
+          TARGET_DATE=$TARGET_DATE
+          FORCE_REPROCESS=$FORCE_REPROCESS
+          TZ=America/Lima
+          EOF
+
+      - name: Ejecutar Orquestador Diario
+        shell: pwsh
+        run: |
+          ./scripts/run-local-daily.ps1
