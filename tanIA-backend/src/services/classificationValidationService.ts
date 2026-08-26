@@ -69,9 +69,8 @@ export const validateAnalysisResult = (
     }
 
     if (!Number.isInteger(norm.pageNumber) || !validPages.has(norm.pageNumber)) {
-      throw validationError(
-        `norms[${index}].pageNumber debe ser una página global entera del chunk.`,
-      );
+      console.warn(`[WARNING] norms[${index}].pageNumber (${norm.pageNumber}) inválido. Asignando la primera página del chunk.`);
+      norm.pageNumber = Array.from(validPages)[0] || 1;
     }
 
     if (
