@@ -52,5 +52,8 @@ jobs:
 
       - name: Ejecutar Orquestador Diario
         shell: pwsh
+        env:
+          TARGET_DATE: ${{ github.event.inputs.target_date }}
+          FORCE_REPROCESS: ${{ github.event.inputs.force_reprocess }}
         run: |
           ./scripts/run-local-daily.ps1

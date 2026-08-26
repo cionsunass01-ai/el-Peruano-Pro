@@ -105,8 +105,19 @@ try {
         }
     }
 
-    $env:TARGET_DATE = ""
-    $env:FORCE_REPROCESS = "false"
+    if (Test-Path ".env") {
+        Get-Content ".env" | ForEach-Object {
+            if ($_ -match '^\s*([^#=]+)=(.*)$') {
+                $key = $matches[1].Trim()
+                $val = $matches[2].Trim()
+                if (-not [System.Environment]::GetEnvironmentVariable($key)) {
+                    [System.Environment]::SetEnvironmentVariable($key, $val)
+                }
+            }
+        }
+    }
+    if (-not $env:TARGET_DATE) { $env:TARGET_DATE = "" }
+    if (-not $env:FORCE_REPROCESS) { $env:FORCE_REPROCESS = "false" }
 
     $internalResultFile = "downloads\run-result.json"
     $rootResultFile = "run-result.json"
