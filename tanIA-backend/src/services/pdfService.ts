@@ -7,6 +7,28 @@ export interface PdfExtractionOptions {
   totalPages?: number;
 }
 
+function render_page(pageData: any) {
+    const render_options = {
+        normalizeWhitespace: false,
+        disableCombineTextItems: false
+    };
+
+    return pageData.getTextContent(render_options)
+    .then(function(textContent: any) {
+        let lastY, text = '';
+        for (let item of textContent.items) {
+            if (lastY == item.transform[5] || !lastY){
+                text += item.str;
+            }  
+            else{
+                text += '\n' + item.str;
+            }    
+            lastY = item.transform[5];
+        }
+        return text + '\n\n---PAGE_BREAK---\n\n';
+    });
+}
+
 /**
  * Extrae texto de un PDF a partir de un Buffer.
  * Retorna un arreglo con el texto por página.
@@ -17,11 +39,14 @@ export async function extractTextFromPdf(
   options: PdfExtractionOptions = {},
 ): Promise<{ page: number; text: string }[]> {
 
-  const data = await pdf(buffer);
+  const data = await pdf(buffer, { pagerender: render_page });
 
   const pageCount = Number(data.numpages);
   const rawText = typeof data.text === 'string' ? data.text : '';
-  const segments = rawText.split("\f");
+  
+  const segments = rawText.split('\n\n---PAGE_BREAK---\n\n').filter((s: string, i: number, arr: string[]) => {
+      return !(i === arr.length - 1 && s.trim() === '');
+  });
 
   if (!Number.isInteger(pageCount) || pageCount < 1) {
     throw new Error(`PDF_PAGE_MAPPING_ERROR: pdf-parse devolvió numpages inválido: ${data.numpages}`);
@@ -30,7 +55,7 @@ export async function extractTextFromPdf(
   if (segments.length !== pageCount) {
     throw new Error(
       `PDF_PAGE_MAPPING_ERROR: pdf-parse declara ${pageCount} páginas, ` +
-      `pero data.text.split("\\f") produjo ${segments.length} segmentos.`,
+      `pero el separador custom produjo ${segments.length} segmentos.`,
     );
   }
 
