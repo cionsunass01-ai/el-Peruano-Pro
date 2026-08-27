@@ -1,16 +1,10 @@
 name: Daily Pipeline - El Peruano (SUNASS)
 
 'on':
-<<<<<<< Updated upstream
-  schedule:
-    # Programación diaria a las 05:33 AM hora de Lima
-    - cron: '33 5 * * *'
-      timezone: 'America/Lima'
-=======
 #  schedule:
-#    # Programación diaria a las 05:30 AM America/Lima (UTC-5 -> 10:30 UTC)
-#    - cron: '30 10 * * *'
->>>>>>> Stashed changes
+#    # Programación diaria a las 05:33 AM hora de Lima
+#    - cron: '33 5 * * *'
+#      timezone: 'America/Lima'
   workflow_dispatch:
     inputs:
       target_date:
