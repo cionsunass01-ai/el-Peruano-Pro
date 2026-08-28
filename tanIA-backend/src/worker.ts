@@ -1,7 +1,6 @@
 import { Buffer } from 'buffer';
 import { getOldestPendingExecution, updateManifestStatus, downloadFileAsBuffer, Manifest } from "./services/driveService"
 import { extractTextFromPdf } from "./services/pdfService";
-import { analyzeGazetteText } from "./services/geminiService"
 import { AnalysisResult } from "./types/domainTypes";
 import { generateAnalysisWordBuffer } from "./services/wordService";
 import { normalizeNormId } from './utils/normalizeNormId';
@@ -14,27 +13,13 @@ import { sendEmailWithAttachments, checkIfEmailSent } from './services/gmailServ
 import { consolidateAnalysisResults } from './services/consolidationService';
 import { validateManifestPageRanges } from './services/pageMappingService';
 import { isOperationallyReportable } from './services/reportPolicyService';
+import {
+  analyzeWithRetry,
+  GEMINI_INTER_CALL_DELAY_MS,
+} from './services/geminiExecutionService';
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function analyzeWithRetry(pages: Array<{ page: number; text: string }>, maxRetries = 7): Promise<AnalysisResult> {
-  let attempt = 0;
-  let delayMs = 5000;
-  while (true) {
-    try {
-      return await analyzeGazetteText(pages);
-    } catch (error: any) {
-      attempt++;
-      const status = error?.status || error?.code;
-      const isRetryable = status === 503 || status === 'UNAVAILABLE' || status === 429 || status === 'RESOURCE_EXHAUSTED' || error.message?.includes('overloaded') || error.message?.includes('fetch failed') || error.name === 'SyntaxError';
-      if (!isRetryable || attempt > maxRetries) throw error;
-      console.warn(`Gemini saturado (intento ${attempt}/${maxRetries}). Reintentando en ${delayMs / 1000}s...`);
-      await delay(delayMs);
-      delayMs *= 2;
-    }
-  }
 }
 
 function getValidatedEmails(): string {
@@ -142,7 +127,9 @@ function validateManifest(manifest: Manifest) {
       const analysis = await analyzeWithRetry(pages);
       analysisResults.push(analysis);
 
-      await delay(5000);
+      if (i < sortedFiles.length - 1) {
+        await delay(GEMINI_INTER_CALL_DELAY_MS);
+      }
     }
 
     console.log("\nConsolidando resultados...");

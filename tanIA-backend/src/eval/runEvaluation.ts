@@ -15,6 +15,7 @@ import {
 } from '../services/reportGenerator';
 import { generateAnalysisWordBuffer } from '../services/wordService';
 import { validateManifestPageRanges } from '../services/pageMappingService';
+import { analyzeChunksSequentially } from '../services/geminiExecutionService';
 
 const PRODUCTIVE_MODEL = 'gemini-2.5-flash';
 
@@ -298,13 +299,13 @@ export const runEvaluation = async (
 ): Promise<EvaluationOutput> => {
   const input = await loadEvaluationInput(options.inputPath);
   const selectedAnalyzer = analyzer ?? await getProductionAnalyzer();
-  const chunkAnalyses: AnalysisResult[] = [];
-  for (const chunkPages of input.chunks) {
-    const chunkAnalysis = await selectedAnalyzer(chunkPages);
-    // Keep the same deterministic validation boundary for injected test analyzers.
-    validateAnalysisResult(chunkAnalysis, chunkPages);
-    chunkAnalyses.push(chunkAnalysis);
-  }
+  const chunkAnalyses = await analyzeChunksSequentially(input.chunks, {
+    analyzer: selectedAnalyzer,
+    onResult: (chunkAnalysis, index) => {
+      // Keep the same deterministic validation boundary for injected test analyzers.
+      validateAnalysisResult(chunkAnalysis, input.chunks[index]);
+    },
+  });
 
   const analysis = consolidateAnalysisResults(chunkAnalyses);
   const runId = options.runId || makeRunId();

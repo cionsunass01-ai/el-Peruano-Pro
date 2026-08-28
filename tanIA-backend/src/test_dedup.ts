@@ -2,6 +2,7 @@ import assert from 'assert';
 import { consolidateAnalysisResults } from './services/consolidationService';
 import {
   AnalysisResult,
+  Appointment,
   ImpactDimension,
   ImpactType,
   Norm,
@@ -27,11 +28,15 @@ const makeNorm = (overrides: Partial<Norm> = {}): Norm => ({
   ...overrides,
 });
 
-const makeResult = (norms: Norm[]): AnalysisResult => ({
+const makeResult = (
+  norms: Norm[],
+  designatedAppointments: Appointment[] = [],
+  concludedAppointments: Appointment[] = [],
+): AnalysisResult => ({
   gazetteDate: '01/01/2026',
   norms,
-  designatedAppointments: [],
-  concludedAppointments: [],
+  designatedAppointments,
+  concludedAppointments,
 });
 
 const run = (name: string, test: () => void): void => {
@@ -231,4 +236,28 @@ run('Campo vacío frente a valor presente se registra como conflicto', () => {
   ]);
 
   assert.ok(result.normConflicts?.[0].conflictingFields.includes('summary'));
+});
+
+run('Movimientos de cargos duplicados entre chunks se consolidan una sola vez', () => {
+  const designated = {
+    institution: 'OTASS',
+    personName: 'Persona Designada',
+    position: 'Director Ejecutivo',
+    summary: 'Designación de prueba',
+  };
+  const concluded = {
+    institution: 'OTASS',
+    personName: 'Persona Cesada',
+    position: 'Director Ejecutivo',
+    summary: 'Conclusión de prueba',
+  };
+
+  const result = consolidateAnalysisResults([
+    makeResult([], [designated], [concluded]),
+    makeResult([], [designated], [concluded]),
+  ]);
+
+  assert.equal(result.norms.length, 0);
+  assert.equal(result.designatedAppointments.length, 1);
+  assert.equal(result.concludedAppointments.length, 1);
 });

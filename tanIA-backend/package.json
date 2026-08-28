@@ -8,6 +8,7 @@
     "test:dedup": "ts-node src/test_dedup.ts",
     "test:pages": "ts-node src/test_page_mapping.ts",
     "test:classification": "ts-node src/test_classification.ts",
+    "test:gemini-execution": "ts-node src/test_gemini_execution.ts",
     "test:eval": "ts-node src/test_eval.ts",
     "test:benchmark": "ts-node src/test_benchmark.ts",
     "benchmark:compare": "ts-node src/eval/compareBenchmark.ts",
