@@ -2,9 +2,8 @@ name: Daily Pipeline - El Peruano (SUNASS)
 
 'on':
   schedule:
-    # Ejecución diaria a las 05:30 PM hora de Lima
-    - cron: '30 17 * * *'
-      timezone: 'America/Lima'
+    # Prueba temporal: ejecución cada 5 minutos
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       target_date:
