@@ -73,21 +73,26 @@ export const validateAnalysisResult = (
       norm.pageNumber = Array.from(validPages)[0] || 1;
     }
 
+    // Baja is a deliberate borderline classification: the content may have
+    // been worth evaluating, while still having no operational impact. It is
+    // therefore valid with NINGUNA dimension and INEXISTENTE impact type.
     if (
       norm.impactDimension === ImpactDimension.NINGUNA &&
-      norm.relevanceToWaterSector !== Relevance.NINGUNA
+      (norm.relevanceToWaterSector === Relevance.ALTA ||
+        norm.relevanceToWaterSector === Relevance.MEDIA)
     ) {
       throw validationError(
-        `norms[${index}] no puede tener dimensión NINGUNA y relevancia distinta de Ninguna.`,
+        `norms[${index}] no puede tener dimensión NINGUNA y relevancia Alta o Media.`,
       );
     }
 
     if (
       norm.impactType === ImpactType.INEXISTENTE &&
-      norm.relevanceToWaterSector !== Relevance.NINGUNA
+      (norm.relevanceToWaterSector === Relevance.ALTA ||
+        norm.relevanceToWaterSector === Relevance.MEDIA)
     ) {
       throw validationError(
-        `norms[${index}] no puede tener impacto INEXISTENTE y relevancia distinta de Ninguna.`,
+        `norms[${index}] no puede tener impacto INEXISTENTE y relevancia Alta o Media.`,
       );
     }
 

@@ -539,4 +539,13 @@ Media = reportable
 Baja = no reportable
 Ninguna = no reportable
 
+# COHERENCIA OBLIGATORIA ENTRE IMPACTO Y RELEVANCIA
+
+Antes de responder, aplica estas reglas:
+
+- Alta o Media requieren una dimensión distinta de NINGUNA y un impacto DIRECTO o INDIRECTO.
+- Baja puede combinarse con dimensión NINGUNA e impacto INEXISTENTE: significa que el contenido fue evaluado por una proximidad objetiva, pero no genera impacto operativo.
+- Ninguna debe combinarse con dimensión NINGUNA e impacto INEXISTENTE.
+- Nunca asignes Alta o Media a una norma con dimensión NINGUNA o impacto INEXISTENTE.
+
 Nunca aumentes artificialmente la relevancia para conseguir que un elemento aparezca en el reporte.`;

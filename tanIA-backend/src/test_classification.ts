@@ -120,6 +120,16 @@ run('B: Ninguna con INEXISTENTE es válido', () => {
   assert.doesNotThrow(() => validateAnalysisResult(makeResult([norm]), pages));
 });
 
+run('B: Baja con NINGUNA e INEXISTENTE es válido', () => {
+  const norm = makeNorm({
+    impactDimension: ImpactDimension.NINGUNA,
+    impactType: ImpactType.INEXISTENTE,
+    relevanceToWaterSector: Relevance.BAJA,
+    sunassRelationship: 'Existe proximidad objetiva, pero no impacto operativo sobre SUNASS.',
+  });
+  assert.doesNotThrow(() => validateAnalysisResult(makeResult([norm]), pages));
+});
+
 run('C: casos conceptuales son datos estructurados, no un segundo clasificador', () => {
   const conceptualCases: Norm[] = [
     makeNorm({
