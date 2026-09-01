@@ -33,6 +33,12 @@ def write_result(result, date_str, run_id=None, manifest_id=None, message=""):
 def get_target_date(logger):
     target_date = os.environ.get("TARGET_DATE", "").strip()
     if target_date:
+        try:
+            datetime.strptime(target_date, "%Y%m%d")
+        except ValueError:
+            raise ValueError(
+                f"TARGET_DATE invalido: '{target_date}'. Use una fecha real con formato YYYYMMDD, por ejemplo 20260828."
+            )
         logger.info(f"Usando fecha TARGET_DATE: {target_date} (Prueba Historica / Reproceso)")
         return target_date
 

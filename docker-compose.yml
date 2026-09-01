@@ -22,6 +22,7 @@ services:
   scraper:
     build:
       context: ./elperuano-scraper
+    user: "${DOCKER_USER:-}"
     volumes:
       - ./downloads:/app/downloads
     environment:
@@ -38,6 +39,7 @@ services:
   backend:
     build:
       context: ./tanIA-backend
+    user: "${DOCKER_USER:-}"
     environment:
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET

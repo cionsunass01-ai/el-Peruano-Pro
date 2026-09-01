@@ -24,6 +24,23 @@ function Write-Log {
     Add-Content -Path $LogPath -Value $LogMessage
 }
 
+function Set-DockerRuntimeUser {
+    # Los contenedores no deben crear archivos root en el workspace montado.
+    # En GitHub Actions/Linux, usamos el mismo UID/GID del runner. En Windows
+    # o si 'id' no existe, Compose conserva el usuario definido por la imagen.
+    if ($env:DOCKER_USER) { return }
+
+    $idCommand = Get-Command id -ErrorAction SilentlyContinue
+    if ($idCommand) {
+        $uid = (& id -u 2>$null).Trim()
+        $gid = (& id -g 2>$null).Trim()
+        if ($uid -match '^\d+$' -and $gid -match '^\d+$') {
+            $env:DOCKER_USER = '{0}:{1}' -f $uid, $gid
+            Write-Log "Docker usará el usuario del runner ($env:DOCKER_USER) para los archivos montados."
+        }
+    }
+}
+
 Write-Log "=== INICIANDO TAREA DIARIA EL PERUANO $(if($DryRun){'[DRY-RUN]'}) ==="
 
 # 5. ConfiguraciÃ³n de reintentos
@@ -119,6 +136,37 @@ try {
     if (-not $env:TARGET_DATE) { $env:TARGET_DATE = "" }
     if (-not $env:FORCE_REPROCESS) { $env:FORCE_REPROCESS = "false" }
 
+    # Una ejecución manual puede procesar una fecha histórica. Validamos la
+    # fecha real del calendario antes de lanzar Docker y la usamos para
+    # comprobar el run-result.json del scraper.
+    $ExpectedDate = $DateStr
+    if (-not [string]::IsNullOrWhiteSpace($env:TARGET_DATE)) {
+        $targetDate = $env:TARGET_DATE.Trim()
+        $parsedTargetDate = [datetime]::MinValue
+        $validTargetDate = $targetDate -match '^\d{8}$' -and [datetime]::TryParseExact(
+            $targetDate,
+            "yyyyMMdd",
+            [Globalization.CultureInfo]::InvariantCulture,
+            [Globalization.DateTimeStyles]::None,
+            [ref]$parsedTargetDate
+        )
+
+        if (-not $validTargetDate) {
+            throw "TARGET_DATE inválido: '$targetDate'. Use una fecha real con formato YYYYMMDD, por ejemplo 20260828."
+        }
+
+        $ExpectedDate = $targetDate
+        Write-Log "Fecha esperada para validar el resultado: $ExpectedDate (prueba histórica)."
+    }
+
+    Set-DockerRuntimeUser
+
+    # Crear el punto de montaje desde el runner para que Docker no lo cree
+    # como root antes de iniciar el contenedor.
+    if (-not (Test-Path "downloads")) {
+        New-Item -ItemType Directory -Path "downloads" | Out-Null
+    }
+
     $internalResultFile = "downloads\run-result.json"
     $rootResultFile = "run-result.json"
 
@@ -184,7 +232,10 @@ try {
 
                 # Validar el JSON y proteger contra antiguo
                 $isValidJson = $true
-                if ($resultData.date -ne $DateStr) { Write-Log "Error: Fecha en JSON no coincide."; $isValidJson = $false }
+                if ($resultData.date -ne $ExpectedDate) {
+                    Write-Log "Error: Fecha en JSON no coincide. Esperada: $ExpectedDate; recibida: $($resultData.date)."
+                    $isValidJson = $false
+                }
                 if ($resultData.execution_id -ne $ExecutionId) { Write-Log "Error: execution_id no coincide."; $isValidJson = $false }
 
                 $resultTimestamp = [datetime]$resultData.timestamp
