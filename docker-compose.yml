@@ -32,6 +32,8 @@ services:
       - GOOGLE_REFRESH_TOKEN
       - GOOGLE_DRIVE_FOLDER_ID
       - TZ=America/Lima
+      - HOME=/tmp
+      - XDG_CACHE_HOME=/tmp/.cache
       - TARGET_DATE
       - FORCE_REPROCESS
       - ORCHESTRATION_ID
