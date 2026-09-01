@@ -25,6 +25,7 @@ services:
     user: "${DOCKER_USER:-}"
     volumes:
       - ./downloads:/app/downloads
+      - ./logs:/app/logs
     environment:
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
