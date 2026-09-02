@@ -12,13 +12,27 @@ if ($PSScriptRoot) {
 }
 Set-Location -Path $ProjectPath
 
-$DateStr = Get-Date -Format "yyyyMMdd"
+# GitHub Actions usa runners Linux en UTC. La operación del diario, sin
+# embargo, debe usar siempre la fecha y hora oficial de Perú, también cuando
+# la ejecución cruza la medianoche UTC.
+try {
+    $PeruTimeZone = [TimeZoneInfo]::FindSystemTimeZoneById("America/Lima")
+} catch {
+    # ID equivalente para Windows, donde no siempre existe el ID IANA.
+    $PeruTimeZone = [TimeZoneInfo]::FindSystemTimeZoneById("SA Pacific Standard Time")
+}
+
+function Get-PeruNow {
+    return [TimeZoneInfo]::ConvertTime([DateTimeOffset]::UtcNow, $PeruTimeZone)
+}
+
+$DateStr = (Get-PeruNow).ToString("yyyyMMdd")
 $LogPath = "logs\$DateStr.log"
 if (-not (Test-Path "logs")) { New-Item -ItemType Directory -Path "logs" | Out-Null }
 
 function Write-Log {
     param ([string]$Message)
-    $TimeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $TimeStamp = (Get-PeruNow).ToString("yyyy-MM-dd HH:mm:ss")
     $LogMessage = "[$TimeStamp] $Message"
     Write-Host $LogMessage
     Add-Content -Path $LogPath -Value $LogMessage
@@ -74,7 +88,7 @@ if (Test-Path $LockFile) {
     }
 }
 
-$startTime = Get-Date
+$startTime = Get-PeruNow
 $lockContent = @{
     PID = $PID
     StartTime = $startTime.ToString("o")
@@ -238,7 +252,7 @@ try {
                 }
                 if ($resultData.execution_id -ne $ExecutionId) { Write-Log "Error: execution_id no coincide."; $isValidJson = $false }
 
-                $resultTimestamp = [datetime]$resultData.timestamp
+                $resultTimestamp = [DateTimeOffset]$resultData.timestamp
                 if ($resultTimestamp.ToUniversalTime() -lt $startTime.ToUniversalTime()) { Write-Log "Error: Timestamp es anterior a esta ejecuciÃ³n."; $isValidJson = $false }
 
                 $allowedResults = @("READY_FOR_BACKEND", "ALREADY_PROCESSED", "NOT_AVAILABLE", "VALIDATION_FAILED", "SCRAPER_ERROR")
@@ -264,8 +278,11 @@ try {
         $scraperStatus = $resultStatus
 
         if ($scraperStatus -eq "NOT_AVAILABLE") {
-            $currentTime = Get-Date
-            $deadline = (Get-Date).Date.AddHours($RetryDeadlineHour).AddMinutes($RetryDeadlineMinute)
+            $currentTime = Get-PeruNow
+            $deadline = [DateTimeOffset]::new(
+                $currentTime.Date.AddHours($RetryDeadlineHour).AddMinutes($RetryDeadlineMinute),
+                $currentTime.Offset
+            )
 
             if ($currentTime -lt $deadline) {
                 Write-Log "Cuadernillo aÃºn NO disponible. Reintentando en $RetryIntervalMinutes minutos..."
@@ -363,7 +380,7 @@ try {
         }
     }
 
-    $endTime = Get-Date
+    $endTime = Get-PeruNow
     $duration = $endTime - $startTime
     Write-Log "DuraciÃ³n Total: $($duration.TotalSeconds) segundos."
     Write-Log "=== TAREA DIARIA FINALIZADA ==="
