@@ -2,8 +2,8 @@ import { analyzeGazetteText } from './geminiService';
 import type { AnalysisResult } from '../types/domainTypes';
 
 export const GEMINI_INTER_CALL_DELAY_MS = 62_000;
-export const GEMINI_MAX_RETRIES = 2;
-export const GEMINI_RETRY_INITIAL_DELAY_MS = 60_000;
+export const GEMINI_MAX_RETRIES = 5;
+export const GEMINI_RETRY_INITIAL_DELAY_MS = 30_000;
 
 type Page = { page: number; text: string };
 export type GeminiChunkAnalyzer = (pages: Page[]) => Promise<AnalysisResult>;

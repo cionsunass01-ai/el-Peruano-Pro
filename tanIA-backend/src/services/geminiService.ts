@@ -6,7 +6,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { validateAnalysisResult } from './classificationValidationService';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-export const GEMINI_MODEL = "gemini-2.5-flash";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 export const ORIGINAL_SYSTEM_INSTRUCTION = `
     Eres un analista legal institucional especializado en normativa peruana.
