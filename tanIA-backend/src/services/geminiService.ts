@@ -32,7 +32,9 @@ export const ORIGINAL_SYSTEM_INSTRUCTION = `
     → Estas normas se consideran SIEMPRE relevantes (Alta).
 
     B) NORMATIVA SECTORIAL Y DE GESTIÓN
-    - Decretos Supremos y Resoluciones Ministeriales que:
+    - Decretos de Urgencia, Decretos Supremos, Leyes y Resoluciones Ministeriales (especialmente de MVCS, MIDAGRI, PCM, MEF) que:
+      • dicten medidas sobre infraestructura, obras por impuestos o emergencias climáticas/hídricas (ej. Fenómeno El Niño),
+      • designen representantes ante Consejos Directivos de Proyectos Especiales hídricos (ej: Chinecas) o comisiones sectoriales,
       • aprueben o modifiquen reglamentos,
       • aprueben lineamientos, directivas, políticas o planes,
       • creen o modifiquen órganos, comisiones o estructuras,
@@ -44,7 +46,7 @@ export const ORIGINAL_SYSTEM_INSTRUCTION = `
 
     REGLAS DE RELEVANCIA:
     - ALTA: Resoluciones SUNASS relacionadas con tarifas, regulación o EPS; normas que modifican reglas del juego del sector.
-    - MEDIA: Lineamientos, planes, comisiones o instrumentos de gestión con impacto indirecto pero funcional en el sector.
+    - MEDIA: Lineamientos, planes, comisiones, Decretos de Urgencia sectoriales, o instrumentos de gestión con impacto funcional o sectorial.
     - BAJA: Normas administrativas generales que se registran solo por trazabilidad institucional cuando existe vínculo funcional mínimo.
     - NINGUNA: Normas de otros sectores sin vínculo funcional alguno (estas NO deben incluirse en el resultado).
 
@@ -52,11 +54,11 @@ export const ORIGINAL_SYSTEM_INSTRUCTION = `
     - Usa lenguaje neutro, descriptivo e institucional.
     - En "summary", resume de forma clara, directa y objetiva qué dispone la norma y cuál es su objeto principal (2 a 4 oraciones).
     - En "pageNumber", usa exactamente el número del marcador "PÁGINA GLOBAL X" donde aparece la norma.
-    - En "normId", coloca el identificador oficial completo de la norma (ej: RESOLUCIÓN DE CONSEJO DIRECTIVO Nº 00045-2026-SUNASS-CD o RESOLUCIÓN MINISTERIAL N° 350-2026-VIVIENDA).
+    - En "normId", coloca el identificador oficial completo de la norma (ej: RESOLUCIÓN DE CONSEJO DIRECTIVO Nº 00045-2026-SUNASS-CD o RESOLUCIÓN MINISTERIAL N° 350-2026-VIVIENDA o DECRETO DE URGENCIA Nº 010-2026).
 
     REGLA DE NO DUPLICIDAD (OBLIGATORIA):
-    - Los MOVIMIENTOS DE CARGOS se registran EXCLUSIVAMENTE en designatedAppointments o concludedAppointments.
-    - NINGUNA norma cuyo contenido principal sea un movimiento de cargos debe duplicarse en "norms".
+    - Los movimientos de cargos de personal administrativo común van en designatedAppointments/concludedAppointments.
+    - Las Resoluciones Ministeriales de MVCS o representaciones ante Consejos Directivos/Proyectos Especiales hídricos se registran también en "norms".
 
     REGLA DE EXCLUSIÓN SEMÁNTICA:
     - Las delegaciones de facultades o atribuciones internas no constituyen normativa sectorial relevante para Agua y Saneamiento.
