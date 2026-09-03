@@ -24,14 +24,14 @@ export interface Norm {
   title: string;
   publicationDate: string;
   summary: string;
-  object: string;
-  affectedSubjects: string;
-  applicationScope: string;
-  sunassRelationship: string;
-  impactDimension: ImpactDimension;
-  impactType: ImpactType;
+  object?: string;
+  affectedSubjects?: string;
+  applicationScope?: string;
+  sunassRelationship?: string;
+  impactDimension?: ImpactDimension;
+  impactType?: ImpactType;
   relevanceToWaterSector: Relevance;
-  classificationReason: string;
+  classificationReason?: string;
   pageNumber: number;
   url?: string;
 }
