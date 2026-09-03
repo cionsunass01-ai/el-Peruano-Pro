@@ -2,8 +2,8 @@ name: Daily Pipeline - El Peruano (SUNASS)
 
 'on':
   schedule:
-    # Ejecución diaria a las 05:30 AM de Perú (10:30 UTC)
-    - cron: '30 10 * * *'
+    # Ejecución diaria a la 01:30 AM de Perú (06:30 UTC)
+    - cron: '30 6 * * *'
   workflow_dispatch:
     inputs:
       target_date:
@@ -14,6 +14,10 @@ name: Daily Pipeline - El Peruano (SUNASS)
         description: 'Forzar reprocesamiento (true/false)'
         required: false
         default: 'false'
+
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
 
 jobs:
   run-pipeline:
